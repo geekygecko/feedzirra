@@ -262,7 +262,15 @@ module Feedzirra
       easy = Curl::Easy.new(feed.feed_url) do |curl|
         curl.headers["User-Agent"]        = (options[:user_agent] || USER_AGENT)
         if feed.last_modified
-          curl.headers["If-Modified-Since"] = feed.last_modified.is_a?(String) ? Time.parse(feed.last_modified).httpdate : feed.last_modified.httpdate
+          if feed.last_modified.is_a?(String)
+            begin
+              curl.headers["If-Modified-Since"] = Time.parse(feed.last_modified).httpdate
+            rescue ArgumentError
+              curl.headers["If-Modified-Since"] = feed.last_modified
+            end
+          else
+            curl.headers["If-Modified-Since"] = feed.last_modified.httpdate
+          end
         end
         curl.headers["If-None-Match"]     = feed.etag if feed.etag
         curl.userpwd = options[:http_authentication].join(':') if options.has_key?(:http_authentication)
