@@ -16,6 +16,7 @@ module Feedzirra
       element :managingEditor
       element :title
       element :link, :as => :url
+      element :category
 
       # If author is not present use managingEditor on the channel
       element :"itunes:author", :as => :itunes_author

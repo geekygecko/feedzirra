@@ -73,6 +73,7 @@ module Feedzirra
     #                 :if_none_match - String that's normally an etag for the request that was stored previously.
     #                 :on_success - Block that gets executed after a successful request.
     #                 :on_failure - Block that gets executed after a failed request.
+    #                 :headers - Add extra http headers e.g. :header => { 'Accept' => 'application/xml' }
     # === Returns
     # A String of XML if a single URL is passed.
     # 
@@ -87,6 +88,11 @@ module Feedzirra
           curl.headers["If-Modified-Since"] = options[:if_modified_since].httpdate if options.has_key?(:if_modified_since)
           curl.headers["If-None-Match"]     = options[:if_none_match] if options.has_key?(:if_none_match)
           curl.headers["Accept-encoding"]   = 'gzip, deflate' if options.has_key?(:compress)
+          if options.has_key?(:headers)
+            options[:headers].each do |key,value|
+              curl.headers[key] = value
+            end
+          end
           curl.follow_location = true
           curl.userpwd = options[:http_authentication].join(':') if options.has_key?(:http_authentication)
           
@@ -226,19 +232,19 @@ module Feedzirra
               responses[url] = feed
               options[:on_success].call(url, feed) if options.has_key?(:on_success)
             rescue Exception => e
-              options[:on_failure].call(url, c.response_code, c.header_str, c.body_str) if options.has_key?(:on_failure)
+              options[:on_failure].call(url, c.response_code, c.header_str, c.body_str, e.message, e) if options.has_key?(:on_failure)
             end
           else
             # puts "Error determining parser for #{url} - #{c.last_effective_url}"
             # raise NoParserAvailable.new("no valid parser for content.") (this would unfirtunately fail the whole 'multi', so it's not really useable)
-            options[:on_failure].call(url, c.response_code, c.header_str, c.body_str) if options.has_key?(:on_failure)
+            options[:on_failure].call(url, c.response_code, c.header_str, c.body_str, "No valid parser for content.", nil) if options.has_key?(:on_failure)
           end
         end
         
         curl.on_failure do |c, err|
           add_url_to_multi(multi, url_queue.shift, url_queue, responses, options) unless url_queue.empty?
           responses[url] = c.response_code
-          options[:on_failure].call(url, c.response_code, c.header_str, c.body_str) if options.has_key?(:on_failure)
+          options[:on_failure].call(url, c.response_code, c.header_str, c.body_str, err, nil) if options.has_key?(:on_failure)
         end
       end
       multi.add(easy)
@@ -290,7 +296,7 @@ module Feedzirra
             responses[feed.feed_url] = feed
             options[:on_success].call(feed) if options.has_key?(:on_success)
           rescue Exception => e
-            options[:on_failure].call(feed, c.response_code, c.header_str, c.body_str) if options.has_key?(:on_failure)
+            options[:on_failure].call(feed, c.response_code, c.header_str, c.body_str, e.message, e) if options.has_key?(:on_failure)
           end
         end
 
@@ -302,7 +308,7 @@ module Feedzirra
             options[:on_success].call(feed) if options.has_key?(:on_success)
           else
             responses[feed.url] = c.response_code
-            options[:on_failure].call(feed, c.response_code, c.header_str, c.body_str) if options.has_key?(:on_failure)
+            options[:on_failure].call(feed, c.response_code, c.header_str, c.body_str, err, nil) if options.has_key?(:on_failure)
           end
         end
       end
