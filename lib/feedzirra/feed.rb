@@ -262,6 +262,7 @@ module Feedzirra
     #                 * :user_agent - String that overrides the default user agent.
     #                 * :on_success - Block that gets executed after a successful request.
     #                 * :on_failure - Block that gets executed after a failed request.
+    #                 * :on_not_modified - Block that gets executed if the response is a 304 not modified. If not present the on_success will be called.
     # === Returns
     # The updated Curl::Multi object with the request details added to it's stack.
     def self.add_feed_to_multi(multi, feed, feed_queue, responses, options) 
@@ -305,7 +306,11 @@ module Feedzirra
           response_code = c.response_code
           if response_code == 304 # it's not modified. this isn't an error condition
             responses[feed.feed_url] = feed
-            options[:on_success].call(feed) if options.has_key?(:on_success)
+            if options.has_key?(:on_not_modified)            
+              options[:on_not_modified].call(feed)
+            elsif options.has_key?(:on_success)
+              options[:on_success].call(feed)
+            end
           else
             responses[feed.url] = c.response_code
             options[:on_failure].call(feed, c.response_code, c.header_str, c.body_str, err, nil) if options.has_key?(:on_failure)
