@@ -279,7 +279,8 @@ module Feedzirra
             curl.headers["If-Modified-Since"] = feed.last_modified.httpdate
           end
         end
-        curl.headers["If-None-Match"]     = feed.etag if feed.etag
+        curl.headers["If-None-Match"] = feed.etag if feed.etag
+        curl.headers["Accept-encoding"] = 'gzip, deflate' if options.has_key?(:compress)
         curl.userpwd = options[:http_authentication].join(':') if options.has_key?(:http_authentication)
         curl.follow_location = true
 
@@ -289,7 +290,7 @@ module Feedzirra
         curl.on_success do |c|
           begin
             add_feed_to_multi(multi, feed_queue.shift, feed_queue, responses, options) unless feed_queue.empty?
-            updated_feed = Feed.parse(c.body_str)
+            updated_feed = Feed.parse(decode_content(c))
             updated_feed.feed_url = c.last_effective_url
             updated_feed.etag = etag_from_header(c.header_str)
             updated_feed.last_modified = last_modified_from_header(c.header_str)
