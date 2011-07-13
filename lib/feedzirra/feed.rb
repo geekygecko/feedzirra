@@ -268,17 +268,7 @@ module Feedzirra
     def self.add_feed_to_multi(multi, feed, feed_queue, responses, options) 
       easy = Curl::Easy.new(feed.feed_url) do |curl|
         curl.headers["User-Agent"]        = (options[:user_agent] || USER_AGENT)
-        if feed.last_modified
-          if feed.last_modified.is_a?(String)
-            begin
-              curl.headers["If-Modified-Since"] = Time.parse(feed.last_modified).httpdate
-            rescue ArgumentError
-              curl.headers["If-Modified-Since"] = feed.last_modified
-            end
-          else
-            curl.headers["If-Modified-Since"] = feed.last_modified.httpdate
-          end
-        end
+        curl.headers["If-Modified-Since"] = feed.last_modified if feed.last_modified
         curl.headers["If-None-Match"] = feed.etag if feed.etag
         curl.headers["Accept-encoding"] = 'gzip, deflate' if options.has_key?(:compress)
         curl.userpwd = options[:http_authentication].join(':') if options.has_key?(:http_authentication)
@@ -340,7 +330,7 @@ module Feedzirra
     # A Time object of the last modified date or nil if it cannot be found in the headers.
     def self.last_modified_from_header(header)
       header =~ /.*Last-Modified:\s(.*)\r/
-      Time.parse($1) if $1
+      $1 if $1
     end
   end
 end
