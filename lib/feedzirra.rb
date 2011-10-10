@@ -6,17 +6,10 @@ require 'sax-machine'
 require 'loofah'
 require 'uri'
 
-require 'active_support/version'
 require 'active_support/basic_object'
 require 'active_support/core_ext/module'
-require 'active_support/core_ext/kernel'
 require 'active_support/core_ext/object'
-
-if ActiveSupport::VERSION::MAJOR >= 3
-  require 'active_support/time'
-else
-  require 'active_support/core_ext/time'
-end
+require 'active_support/time'
 
 require 'core_ext/date'
 require 'core_ext/string'
