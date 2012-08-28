@@ -164,6 +164,10 @@ module Feedzirra
         xml = c.body_str
       end
 
+      if !xml.nil? && xml.encoding.to_s == "ASCII-8BIT"
+        xml.gsub!(/[^\x20-\x7e]/,'')
+      end
+
       xml
     end
 
